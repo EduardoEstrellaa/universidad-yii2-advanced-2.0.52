@@ -256,4 +256,39 @@ class Pagos extends \yii\db\ActiveRecord
     {
         $this->estado = self::ESTADO_ATRASADO;
     }
+
+
+    // Agrega este método al final de tu modelo Pagos
+    public function save($runValidation = true, $attributeNames = null)
+    {
+        throw new \yii\base\NotSupportedException('El guardado directo está deshabilitado. Use el procedimiento almacenado sp_procesar_pago.');
+    }
+
+    // Métodos mejorados para opciones
+    public static function getOpcionesConcepto()
+    {
+        return [
+            self::CONCEPTO_MATRICULA => 'Matrícula',
+            self::CONCEPTO_MENSUALIDAD => 'Mensualidad',
+            self::CONCEPTO_OTROS => 'Otros',
+        ];
+    }
+
+    public static function getOpcionesMetodoPago()
+    {
+        return [
+            self::METODO_PAGO_EFECTIVO => 'Efectivo',
+            self::METODO_PAGO_TARJETA => 'Tarjeta',
+            self::METODO_PAGO_TRANSFERENCIA => 'Transferencia',
+        ];
+    }
+
+    public static function getOpcionesEstado()
+    {
+        return [
+            self::ESTADO_COMPLETO => 'Completo',
+            self::ESTADO_PENDIENTE => 'Pendiente',
+            self::ESTADO_ATRASADO => 'Atrasado',
+        ];
+    }
 }
