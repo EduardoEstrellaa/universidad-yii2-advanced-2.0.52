@@ -7,6 +7,7 @@ use backend\models\search\EstudiantesSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use yii;
 
 /**
  * EstudiantesController implements the CRUD actions for Estudiantes model.
@@ -68,17 +69,66 @@ class EstudiantesController extends Controller
     public function actionCreate()
     {
         $model = new Estudiantes();
+        $error = null; // Inicializa la variable
+        $resultado = null; // Inicializa la variable
 
         if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
-                return $this->redirect(['view', 'estudiante_id' => $model->estudiante_id]);
+            $model->load($this->request->post());
+
+            // Obtener conexión a la base de datos
+            $db = Yii::$app->db;
+
+            try {
+                // Preparar parámetros para el procedimiento almacenado
+                $command = $db->createCommand("
+                    CALL sp_alta_estudiante(
+                        :nombre, :apellido, :fecha_nacimiento, :genero,
+                        :direccion, :telefono, :email, :fecha_ingreso,
+                        @estudiante_id, @resultado, @error
+                    )
+                ");
+
+                // Bind de parámetros
+                $command->bindValues([
+                    ':nombre' => $model->nombre,
+                    ':apellido' => $model->apellido,
+                    ':fecha_nacimiento' => $model->fecha_nacimiento,
+                    ':genero' => $model->genero,
+                    ':direccion' => $model->direccion,
+                    ':telefono' => $model->telefono,
+                    ':email' => $model->email,
+                    ':fecha_ingreso' => $model->fecha_ingreso,
+                ]);
+
+                // Ejecutar el procedimiento
+                $command->execute();
+
+                // Obtener los parámetros de salida
+                $output = $db->createCommand("
+                    SELECT @estudiante_id as estudiante_id, 
+                           @resultado as resultado, 
+                           @error as error
+                ")->queryOne();
+
+                if (!empty($output['error'])) {
+                    $error = $output['error'];
+                    // Agregar el error al modelo para mostrarlo en el campo correspondiente
+                    if (strpos($error, 'Email') !== false) {
+                        $model->addError('email', $error);
+                    }
+                } else {
+                    $resultado = $output['resultado'];
+                    return $this->redirect(['view', 'estudiante_id' => $output['estudiante_id']]);
+                }
+            } catch (\Exception $e) {
+                $error = "Error al ejecutar el procedimiento: " . $e->getMessage();
             }
-        } else {
-            $model->loadDefaultValues();
         }
 
         return $this->render('create', [
             'model' => $model,
+            'error' => $error,
+            'resultado' => $resultado
         ]);
     }
 

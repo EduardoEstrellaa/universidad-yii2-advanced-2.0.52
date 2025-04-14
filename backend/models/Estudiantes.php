@@ -3,6 +3,7 @@
 namespace backend\models;
 
 use Yii;
+use yii\db\ActiveRecord;
 
 /**
  * This is the model class for table "estudiantes".
@@ -18,15 +19,14 @@ use Yii;
  * @property string|null $fecha_ingreso
  * @property string|null $estado
  */
-class Estudiantes extends \yii\db\ActiveRecord
+class Estudiantes extends ActiveRecord
 {
-
-    /**
-     * ENUM field values
-     */
+    // Valores ENUM para genero
     const GENERO_M = 'M';
     const GENERO_F = 'F';
     const GENERO_O = 'O';
+
+    // Valores ENUM para estado
     const ESTADO_ACTIVO = 'activo';
     const ESTADO_GRADUADO = 'graduado';
     const ESTADO_RETIRADO = 'retirado';
@@ -41,22 +41,20 @@ class Estudiantes extends \yii\db\ActiveRecord
 
     /**
      * {@inheritdoc}
+     * Reglas simplificadas ya que la validación principal está en el SP
      */
     public function rules()
     {
         return [
-            [['fecha_nacimiento', 'genero', 'direccion', 'telefono', 'email', 'fecha_ingreso'], 'default', 'value' => null],
-            [['estado'], 'default', 'value' => 'activo'],
             [['nombre', 'apellido'], 'required'],
             [['fecha_nacimiento', 'fecha_ingreso'], 'safe'],
-            [['genero', 'estado'], 'string'],
             [['nombre', 'apellido'], 'string', 'max' => 50],
             [['direccion'], 'string', 'max' => 200],
             [['telefono'], 'string', 'max' => 20],
             [['email'], 'string', 'max' => 100],
-            ['genero', 'in', 'range' => array_keys(self::optsGenero())],
-            ['estado', 'in', 'range' => array_keys(self::optsEstado())],
-            [['email'], 'unique'],
+            [['genero'], 'in', 'range' => [self::GENERO_M, self::GENERO_F, self::GENERO_O]],
+            [['estado'], 'in', 'range' => [self::ESTADO_ACTIVO, self::ESTADO_GRADUADO, self::ESTADO_RETIRADO]],
+            [['email'], 'email'], // Validación básica de formato de email
         ];
     }
 
@@ -66,137 +64,91 @@ class Estudiantes extends \yii\db\ActiveRecord
     public function attributeLabels()
     {
         return [
-            'estudiante_id' => 'Estudiante ID',
+            'estudiante_id' => 'ID Estudiante',
             'nombre' => 'Nombre',
             'apellido' => 'Apellido',
-            'fecha_nacimiento' => 'Fecha Nacimiento',
-            'genero' => 'Genero',
-            'direccion' => 'Direccion',
-            'telefono' => 'Telefono',
-            'email' => 'Email',
-            'fecha_ingreso' => 'Fecha Ingreso',
+            'fecha_nacimiento' => 'Fecha de Nacimiento',
+            'genero' => 'Género',
+            'direccion' => 'Dirección',
+            'telefono' => 'Teléfono',
+            'email' => 'Correo Electrónico',
+            'fecha_ingreso' => 'Fecha de Ingreso',
             'estado' => 'Estado',
         ];
     }
 
+    /**
+     * Sobreescribimos save() para forzar el uso del procedimiento almacenado
+     */
+    public function save($runValidation = true, $attributeNames = null)
+    {
+        throw new \yii\base\NotSupportedException('El guardado directo está deshabilitado. Use el procedimiento almacenado sp_alta_estudiante.');
+    }
 
     /**
-     * column genero ENUM value labels
-     * @return string[]
+     * Métodos para opciones de formulario
      */
-    public static function optsGenero()
+    public static function getOpcionesGenero()
     {
         return [
-            self::GENERO_M => 'M',
-            self::GENERO_F => 'F',
-            self::GENERO_O => 'O',
+            self::GENERO_M => 'Masculino',
+            self::GENERO_F => 'Femenino',
+            self::GENERO_O => 'Otro',
+        ];
+    }
+
+    public static function getOpcionesEstado()
+    {
+        return [
+            self::ESTADO_ACTIVO => 'Activo',
+            self::ESTADO_GRADUADO => 'Graduado',
+            self::ESTADO_RETIRADO => 'Retirado',
         ];
     }
 
     /**
-     * column estado ENUM value labels
-     * @return string[]
+     * Método para ejecutar el procedimiento almacenado
      */
-    public static function optsEstado()
+    public function registrarEstudiante()
     {
-        return [
-            self::ESTADO_ACTIVO => 'activo',
-            self::ESTADO_GRADUADO => 'graduado',
-            self::ESTADO_RETIRADO => 'retirado',
-        ];
-    }
+        $db = Yii::$app->db;
 
-    /**
-     * @return string
-     */
-    public function displayGenero()
-    {
-        return self::optsGenero()[$this->genero];
-    }
+        try {
+            $command = $db->createCommand("CALL sp_alta_estudiante(
+                :nombre, :apellido, :fecha_nacimiento, :genero,
+                :direccion, :telefono, :email, :fecha_ingreso,
+                @estudiante_id, @resultado, @error
+            )");
 
-    /**
-     * @return bool
-     */
-    public function isGeneroM()
-    {
-        return $this->genero === self::GENERO_M;
-    }
+            $command->bindValues([
+                ':nombre' => $this->nombre,
+                ':apellido' => $this->apellido,
+                ':fecha_nacimiento' => $this->fecha_nacimiento,
+                ':genero' => $this->genero,
+                ':direccion' => $this->direccion,
+                ':telefono' => $this->telefono,
+                ':email' => $this->email,
+                ':fecha_ingreso' => $this->fecha_ingreso,
+            ]);
 
-    public function setGeneroToM()
-    {
-        $this->genero = self::GENERO_M;
-    }
+            $command->execute();
 
-    /**
-     * @return bool
-     */
-    public function isGeneroF()
-    {
-        return $this->genero === self::GENERO_F;
-    }
+            $output = $db->createCommand("
+                SELECT @estudiante_id as estudiante_id, 
+                       @resultado as resultado, 
+                       @error as error
+            ")->queryOne();
 
-    public function setGeneroToF()
-    {
-        $this->genero = self::GENERO_F;
-    }
+            if (!empty($output['error'])) {
+                $this->addError('email', $output['error']);
+                return false;
+            }
 
-    /**
-     * @return bool
-     */
-    public function isGeneroO()
-    {
-        return $this->genero === self::GENERO_O;
-    }
-
-    public function setGeneroToO()
-    {
-        $this->genero = self::GENERO_O;
-    }
-
-    /**
-     * @return string
-     */
-    public function displayEstado()
-    {
-        return self::optsEstado()[$this->estado];
-    }
-
-    /**
-     * @return bool
-     */
-    public function isEstadoActivo()
-    {
-        return $this->estado === self::ESTADO_ACTIVO;
-    }
-
-    public function setEstadoToActivo()
-    {
-        $this->estado = self::ESTADO_ACTIVO;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isEstadoGraduado()
-    {
-        return $this->estado === self::ESTADO_GRADUADO;
-    }
-
-    public function setEstadoToGraduado()
-    {
-        $this->estado = self::ESTADO_GRADUADO;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isEstadoRetirado()
-    {
-        return $this->estado === self::ESTADO_RETIRADO;
-    }
-
-    public function setEstadoToRetirado()
-    {
-        $this->estado = self::ESTADO_RETIRADO;
+            $this->estudiante_id = $output['estudiante_id'];
+            return true;
+        } catch (\Exception $e) {
+            $this->addError('email', 'Error al registrar el estudiante: ' . $e->getMessage());
+            return false;
+        }
     }
 }
