@@ -75,20 +75,15 @@ class EstudiantesController extends Controller
         if ($this->request->isPost) {
             $model->load($this->request->post());
 
-            // Obtener conexión a la base de datos
             $db = Yii::$app->db;
 
             try {
-                // Preparar parámetros para el procedimiento almacenado
-                $command = $db->createCommand("
-                    CALL sp_alta_estudiante(
-                        :nombre, :apellido, :fecha_nacimiento, :genero,
-                        :direccion, :telefono, :email, :fecha_ingreso,
-                        @estudiante_id, @resultado, @error
-                    )
-                ");
+                $command = $db->createCommand("CALL sp_alta_estudiante(
+                    :nombre, :apellido, :fecha_nacimiento, :genero,
+                    :direccion, :telefono, :email, :fecha_ingreso,
+                    @estudiante_id, @resultado, @error
+                )");
 
-                // Bind de parámetros
                 $command->bindValues([
                     ':nombre' => $model->nombre,
                     ':apellido' => $model->apellido,
@@ -100,10 +95,8 @@ class EstudiantesController extends Controller
                     ':fecha_ingreso' => $model->fecha_ingreso,
                 ]);
 
-                // Ejecutar el procedimiento
                 $command->execute();
 
-                // Obtener los parámetros de salida
                 $output = $db->createCommand("
                     SELECT @estudiante_id as estudiante_id, 
                            @resultado as resultado, 
@@ -112,12 +105,12 @@ class EstudiantesController extends Controller
 
                 if (!empty($output['error'])) {
                     $error = $output['error'];
-                    // Agregar el error al modelo para mostrarlo en el campo correspondiente
                     if (strpos($error, 'Email') !== false) {
                         $model->addError('email', $error);
                     }
                 } else {
-                    $resultado = $output['resultado'];
+                    // Guardar el mensaje de éxito en sesión para mostrarlo en la vista
+                    Yii::$app->session->setFlash('success', $output['resultado']);
                     return $this->redirect(['view', 'estudiante_id' => $output['estudiante_id']]);
                 }
             } catch (\Exception $e) {
