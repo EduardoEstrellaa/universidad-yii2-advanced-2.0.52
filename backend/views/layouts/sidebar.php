@@ -76,25 +76,61 @@
                     ['label' => 'Login', 'url' => ['site/login'], 'icon' => 'sign-in-alt', 'visible' => Yii::$app->user->isGuest],
                     ['label' => 'Gii',  'icon' => 'file-code', 'url' => ['/gii'], 'target' => '_blank'],
                     ['label' => 'Debug', 'icon' => 'bug', 'url' => ['/debug'], 'target' => '_blank'],
-                    ['label' => 'MULTI LEVEL EXAMPLE', 'header' => true],
-                    ['label' => 'Level1'],
+
+                    ['label' => '========EJERCICIOS DB========', 'header' => true],
                     [
-                        'label' => 'Level1',
+                        'label' => 'TRANSACCIONES Y TRIGGERS',
                         'items' => [
-                            ['label' => 'Level2', 'iconStyle' => 'far'],
+
                             [
-                                'label' => 'Level2',
-                                'iconStyle' => 'far',
-                                'items' => [
-                                    ['label' => 'Level3', 'iconStyle' => 'far', 'icon' => 'dot-circle'],
-                                    ['label' => 'Level3', 'iconStyle' => 'far', 'icon' => 'dot-circle'],
-                                    ['label' => 'Level3', 'iconStyle' => 'far', 'icon' => 'dot-circle']
-                                ]
+                                'label' => 'Estudiantes',
+                                'icon' => 'users',
+                                'url' => ['estudiantes/index'],  // Ajusta esta URL según el controlador y acción correspondientes
                             ],
-                            ['label' => 'Level2', 'iconStyle' => 'far']
+                            [
+                                'label' => 'Pagos',
+                                'icon' => 'users',
+                                'url' => ['pagos/index'],  // Ajusta esta URL según el controlador y acción correspondientes
+                            ],
                         ]
                     ],
-                    ['label' => 'Level1'],
+
+
+
+
+                    [
+                        'label' => 'SUBCONSULTAS Y PROCEDIMINTOS ALMACENADOS',
+                        'items' => [
+                            [
+                                'label' => 'EJERCICIO 1',
+                                'iconStyle' => 'far',
+                                'url' => ['ejercicio1/ejercicio1'],
+                            ],
+                            [
+                                'label' => 'EJERCICIO 2',
+                                'iconStyle' => 'far',
+                                'url' => ['ejercicio2/ejercicio2'],
+                            ],
+                            [
+                                'label' => 'EJERCICIO 3',
+                                'iconStyle' => 'far',
+                                'url' => ['ejercicio3/ejercicio3'],
+                            ],
+                            [
+                                'label' => 'EJERCICIO 4',
+                                'iconStyle' => 'far',
+                                'url' => ['ejercicio4/ejercicio4'],
+                            ],
+                            [
+                                'label' => 'EJERCICIO 5',
+                                'iconStyle' => 'far',
+                                'url' => ['ejercicio5/ejercicio5'],
+                            ],
+                        ]
+                    ],
+
+                    ['label' => 'TRIGGERS'],
+
                     ['label' => 'LABELS', 'header' => true],
                     ['label' => 'Important', 'iconStyle' => 'far', 'iconClassAdded' => 'text-danger'],
                     ['label' => 'Warning', 'iconClass' => 'nav-icon far fa-circle text-warning'],
