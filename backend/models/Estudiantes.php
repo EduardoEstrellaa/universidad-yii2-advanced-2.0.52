@@ -46,15 +46,22 @@ class Estudiantes extends ActiveRecord
     public function rules()
     {
         return [
-            [['nombre', 'apellido'], 'required'],
+            [['nombre', 'apellido', 'email'], 'required'],
             [['fecha_nacimiento', 'fecha_ingreso'], 'safe'],
             [['nombre', 'apellido'], 'string', 'max' => 50],
             [['direccion'], 'string', 'max' => 200],
             [['telefono'], 'string', 'max' => 20],
             [['email'], 'string', 'max' => 100],
+            [['email'], 'email'],
+
             [['genero'], 'in', 'range' => [self::GENERO_M, self::GENERO_F, self::GENERO_O]],
             [['estado'], 'in', 'range' => [self::ESTADO_ACTIVO, self::ESTADO_GRADUADO, self::ESTADO_RETIRADO]],
-            [['email'], 'email'], // Validación básica de formato de email
+            [
+                ['telefono'],
+                'unique',
+                'targetClass' => self::class,
+                'message' => 'Este número telefónico ya está registrado'
+            ],
         ];
     }
 

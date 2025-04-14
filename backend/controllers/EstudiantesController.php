@@ -69,8 +69,9 @@ class EstudiantesController extends Controller
     public function actionCreate()
     {
         $model = new Estudiantes();
-        $error = null; // Inicializa la variable
-        $resultado = null; // Inicializa la variable
+        $error = null;
+        $resultado = null;
+        $logData = null; // Para almacenar datos del log
 
         if ($this->request->isPost) {
             $model->load($this->request->post());
@@ -105,13 +106,24 @@ class EstudiantesController extends Controller
 
                 if (!empty($output['error'])) {
                     $error = $output['error'];
-                    if (strpos($error, 'Email') !== false) {
-                        $model->addError('email', $error);
-                    }
+                    $resultado = $output['resultado'] ?? null;
+
+                    // Obtener el último log de error para este email
+                    $logData = $this->obtenerUltimoLogError($model->email);
+
+                    $this->asignarErroresTrigger($model, $error);
                 } else {
-                    // Guardar el mensaje de éxito en sesión para mostrarlo en la vista
-                    Yii::$app->session->setFlash('success', $output['resultado']);
+                    $resultado = $output['resultado'];
+                    Yii::$app->session->setFlash('success', $resultado);
                     return $this->redirect(['view', 'estudiante_id' => $output['estudiante_id']]);
+                }
+            } catch (\yii\db\Exception $e) {
+                $error = $this->procesarErrorTrigger($e->getMessage());
+                $this->asignarErroresTrigger($model, $error);
+
+                // Obtener el último log de error
+                if ($model->email) {
+                    $logData = $this->obtenerUltimoLogError($model->email);
                 }
             } catch (\Exception $e) {
                 $error = "Error al ejecutar el procedimiento: " . $e->getMessage();
@@ -121,8 +133,65 @@ class EstudiantesController extends Controller
         return $this->render('create', [
             'model' => $model,
             'error' => $error,
-            'resultado' => $resultado
+            'resultado' => $resultado,
+            'logData' => $logData // Pasamos los datos del log a la vista
         ]);
+    }
+
+    protected function obtenerUltimoLogError($email)
+    {
+        try {
+            $result = Yii::$app->db->createCommand("
+                SELECT mensaje, datos_nuevos, fecha_hora 
+                FROM log_acciones 
+                WHERE tabla_afectada = 'estudiantes' 
+                AND tipo_operacion = 'INSERT' 
+                AND accion_realizada LIKE '%bloqueado%'
+                ORDER BY fecha_hora DESC 
+                LIMIT 1
+            ")->queryOne();
+
+            // Verificar si el email coincide (manualmente)
+            if ($result && isset($result['datos_nuevos'])) {
+                $datos = json_decode($result['datos_nuevos'], true);
+                if (isset($datos['email']) && $datos['email'] === $email) {
+                    return $result;
+                }
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            Yii::error("Error al obtener logs: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Procesa el mensaje de error del trigger para mostrarlo de forma amigable
+     */
+    protected function procesarErrorTrigger($errorMessage)
+    {
+        // Extraer solo la parte del mensaje que nos interesa
+        if (preg_match('/SQLSTATE\[45000\]: (.+)/', $errorMessage, $matches)) {
+            return $matches[1];
+        }
+        return $errorMessage;
+    }
+
+    /**
+     * Asigna errores a los campos correspondientes según el mensaje del trigger
+     */
+    protected function asignarErroresTrigger($model, $error)
+    {
+        if (
+            strpos($error, 'correo electrónico') !== false ||
+            strpos($error, 'dominio @valladolid.tecnm.mx') !== false
+        ) {
+            $model->addError('email', $error);
+        } elseif (strpos($error, 'número telefónico') !== false) {
+            $model->addError('telefono', $error);
+        }
+        // Puedes agregar más condiciones para otros campos si es necesario
     }
 
     /**
