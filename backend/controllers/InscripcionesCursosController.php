@@ -7,6 +7,9 @@ use backend\models\search\InscripcionesCursosSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use backend\models\LogAcciones;
+use yii\db\Exception;
+
 
 /**
  * InscripcionesCursosController implements the CRUD actions for InscripcionesCursos model.
@@ -68,10 +71,23 @@ class InscripcionesCursosController extends Controller
     public function actionCreate()
     {
         $model = new InscripcionesCursos();
+        $error = null;
+        $logData = null;
 
         if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
-                return $this->redirect(['view', 'inscripcion_id' => $model->inscripcion_id]);
+            if ($model->load($this->request->post())) {
+                try {
+                    if ($model->save()) {
+                        return $this->redirect(['view', 'inscripcion_id' => $model->inscripcion_id]);
+                    }
+                } catch (Exception $e) {
+                    $error = $e->getMessage();
+                    $logData = LogAcciones::find()
+                        ->where(['tabla_afectada' => 'inscripciones_cursos'])
+                        ->orderBy(['log_id' => SORT_DESC])
+                        ->asArray()
+                        ->one();
+                }
             }
         } else {
             $model->loadDefaultValues();
@@ -79,6 +95,8 @@ class InscripcionesCursosController extends Controller
 
         return $this->render('create', [
             'model' => $model,
+            'error' => $error,
+            'logData' => $logData,
         ]);
     }
 
@@ -92,13 +110,28 @@ class InscripcionesCursosController extends Controller
     public function actionUpdate($inscripcion_id)
     {
         $model = $this->findModel($inscripcion_id);
+        $error = null;
+        $logData = null;
 
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'inscripcion_id' => $model->inscripcion_id]);
+        if ($this->request->isPost && $model->load($this->request->post())) {
+            try {
+                if ($model->save()) {
+                    return $this->redirect(['view', 'inscripcion_id' => $model->inscripcion_id]);
+                }
+            } catch (Exception $e) {
+                $error = $e->getMessage();
+                $logData = LogAcciones::find()
+                    ->where(['tabla_afectada' => 'inscripciones_cursos', 'id_registro_afectado' => $model->inscripcion_id])
+                    ->orderBy(['log_id' => SORT_DESC])
+                    ->asArray()
+                    ->one();
+            }
         }
 
         return $this->render('update', [
             'model' => $model,
+            'error' => $error,
+            'logData' => $logData,
         ]);
     }
 

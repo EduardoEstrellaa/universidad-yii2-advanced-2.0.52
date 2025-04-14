@@ -18,7 +18,7 @@ use yii\widgets\ActiveForm;
 
     <?= $form->field($model, 'calificacion_final')->textInput(['maxlength' => true]) ?>
 
-    <?= $form->field($model, 'estado')->dropDownList([ 'en_curso' => 'En curso', 'aprobado' => 'Aprobado', 'reprobado' => 'Reprobado', 'retirado' => 'Retirado', ], ['prompt' => '']) ?>
+    <?= $form->field($model, 'estado')->textInput(['maxlength' => true]) ?>
 
     <div class="form-group">
         <?= Html::submitButton('Save', ['class' => 'btn btn-success']) ?>
@@ -27,3 +27,5 @@ use yii\widgets\ActiveForm;
     <?php ActiveForm::end(); ?>
 
 </div>
+
+<?php $this->registerJsFile('https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js', ['position' => \yii\web\View::POS_END]); ?>
