@@ -92,6 +92,11 @@
                                 'icon' => 'users',
                                 'url' => ['pagos/index'],  // Ajusta esta URL según el controlador y acción correspondientes
                             ],
+                            [
+                                'label' => 'Inscripciones Cursos',
+                                'icon' => 'users',
+                                'url' => ['inscripciones-cursos/index'],  // Ajusta esta URL según el controlador y acción correspondientes
+                            ],
                         ]
                     ],
 
