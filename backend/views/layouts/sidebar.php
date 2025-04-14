@@ -134,8 +134,6 @@
                         ]
                     ],
 
-                    ['label' => 'TRIGGERS'],
-
                     ['label' => 'LABELS', 'header' => true],
                     ['label' => 'Important', 'iconStyle' => 'far', 'iconClassAdded' => 'text-danger'],
                     ['label' => 'Warning', 'iconClass' => 'nav-icon far fa-circle text-warning'],
